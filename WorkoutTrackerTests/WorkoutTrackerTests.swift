@@ -1,10 +1,3 @@
-//
-//  WorkoutTrackerTests.swift
-//  WorkoutTrackerTests
-//
-//  Created by luigi on 1/1/26.
-//
-
 import Testing
 @testable import WorkoutTracker
 

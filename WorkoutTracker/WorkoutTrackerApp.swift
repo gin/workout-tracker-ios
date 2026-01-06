@@ -1,10 +1,3 @@
-//
-//  WorkoutTrackerApp.swift
-//  WorkoutTracker
-//
-//  Created by luigi on 1/1/26.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -12,7 +5,9 @@ import SwiftData
 struct WorkoutTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Exercise.self,
+            WorkoutSession.self,
+            ExerciseSet.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
