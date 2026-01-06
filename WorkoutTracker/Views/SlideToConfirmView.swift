@@ -7,7 +7,7 @@ struct SlideToConfirmView: View {
     @State private var offset: CGFloat = 0
     @State private var isConfirmed = false
     
-    private let handleSize: CGFloat = 50
+    private let handleSize: CGFloat = 60
     private let trackPadding: CGFloat = 4
     
     var body: some View {
@@ -21,7 +21,6 @@ struct SlideToConfirmView: View {
                 
                 // Text label
                 Text(text)
-                    .font(.footnote)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

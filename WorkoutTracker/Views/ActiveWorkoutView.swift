@@ -52,6 +52,18 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
+        .overlay {
+            if isConfirmingFinish {
+                Color.black.opacity(0.001) // Nearly transparent but catches taps
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation {
+                            isConfirmingFinish = false
+                        }
+                    }
+                    .ignoresSafeArea()
+            }
+        }
         .navigationTitle("Workout")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -64,21 +76,10 @@ struct ActiveWorkoutView: View {
             
             ToolbarItem(placement: .bottomBar) {
                 if isConfirmingFinish {
-                    HStack(spacing: 12) {
-                        Button {
-                            withAnimation {
-                                isConfirmingFinish = false
-                            }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        SlideToConfirmView(text: "Slide to Finish") {
-                            finishWorkout()
-                        }
+                    SlideToConfirmView(text: "Slide to Finish") {
+                        finishWorkout()
                     }
+                    .frame(width: 280)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
                     Button {
