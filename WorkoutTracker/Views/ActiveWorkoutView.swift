@@ -8,7 +8,7 @@ struct ActiveWorkoutView: View {
     
     @State private var showExerciseSearch = false
     @State private var selectedExerciseForSet: Exercise?
-    @State private var showFinishConfirmation = false
+    @State private var isConfirmingFinish = false
     
     var body: some View {
         List {
@@ -63,26 +63,39 @@ struct ActiveWorkoutView: View {
             }
             
             ToolbarItem(placement: .bottomBar) {
-                Button {
-                    if workoutSession.sets.isEmpty {
-                        finishWorkout()
-                    } else {
-                        showFinishConfirmation = true
+                if isConfirmingFinish {
+                    HStack(spacing: 12) {
+                        Button {
+                            withAnimation {
+                                isConfirmingFinish = false
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        SlideToConfirmView(text: "Slide to Finish") {
+                            finishWorkout()
+                        }
                     }
-                } label: {
-                    Text(workoutSession.sets.isEmpty ? "Cancel Workout" : "Finish Workout")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
-                .confirmationDialog("Finish Workout?", isPresented: $showFinishConfirmation, titleVisibility: .visible) {
-                    Button("Finish Workout") {
-                        finishWorkout()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else {
+                    Button {
+                        if workoutSession.sets.isEmpty {
+                            finishWorkout()
+                        } else {
+                            withAnimation {
+                                isConfirmingFinish = true
+                            }
+                        }
+                    } label: {
+                        Text(workoutSession.sets.isEmpty ? "Cancel Workout" : "Finish Workout")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
                     }
-                    Button("Resume", role: .cancel) {}
-                } message: {
-                    Text("This will end your current workout session.")
+                    .buttonStyle(.borderedProminent)
+                    .tint(.accentColor)
                 }
             }
         }
