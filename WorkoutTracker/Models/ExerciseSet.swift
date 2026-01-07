@@ -28,11 +28,12 @@ final class ExerciseSet {
     
     /// Check if this set is a personal record for the exercise
     var isPersonalRecord: Bool {
+        guard !isDeleted else { return false }
         guard let exercise = exercise else { return false }
         
         let thisVolume = weight * Double(reps)
         
-        for otherSet in exercise.sets where otherSet.id != self.id {
+        for otherSet in exercise.sets where otherSet.id != self.id && !otherSet.isDeleted {
             let otherVolume = otherSet.weight * Double(otherSet.reps)
             
             if otherVolume > thisVolume {

@@ -21,7 +21,7 @@ final class Exercise {
         
         // Find the set with the highest weight × reps (estimated 1RM proxy)
         // If volumes are tied, higher reps win
-        let bestSet = sets.max { lhs, rhs in
+        let bestSet = sets.filter { !$0.isDeleted }.max { lhs, rhs in
             let lhsVolume = lhs.weight * Double(lhs.reps)
             let rhsVolume = rhs.weight * Double(rhs.reps)
             

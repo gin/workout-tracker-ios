@@ -35,7 +35,7 @@ struct WorkoutSummaryView: View {
                 ForEach(workoutSession.exercises) { exercise in
                     Section(exercise.name) {
                         let exerciseSets = workoutSession.sets
-                            .filter { $0.exercise?.id == exercise.id }
+                            .filter { $0.exercise?.id == exercise.id && !$0.isDeleted }
                             .sorted { $0.timestamp < $1.timestamp }
                         
                         ForEach(Array(exerciseSets.enumerated()), id: \.element.id) { index, set in

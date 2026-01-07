@@ -11,42 +11,55 @@ struct ActiveWorkoutView: View {
     @State private var isConfirmingFinish = false
     
     var body: some View {
-        List {
-            if workoutSession.exercises.isEmpty {
-                Section {
-                    ContentUnavailableView(
-                        "No Exercises Yet",
-                        systemImage: "dumbbell",
-                        description: Text("Tap the + button to add your first exercise")
-                    )
-                }
-            } else {
-                ForEach(workoutSession.exercises) { exercise in
-                    Section(exercise.name) {
-                        let exerciseSets = workoutSession.sets
-                            .filter { $0.exercise?.id == exercise.id }
-                            .sorted { $0.timestamp < $1.timestamp }
-                        
-                        ForEach(Array(exerciseSets.enumerated()), id: \.element.id) { index, set in
-                            HStack {
-                                Text("Set \(index + 1)")
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text(set.displayString)
-                                    .fontWeight(.medium)
-                                if set.isPersonalRecord {
-                                    Text("🏆")
+        ScrollViewReader { proxy in
+            List {
+                if workoutSession.exercises.isEmpty {
+                    Section {
+                        ContentUnavailableView(
+                            "No Exercises Yet",
+                            systemImage: "dumbbell",
+                            description: Text("Tap the + button to add your first exercise")
+                        )
+                    }
+                } else {
+                    ForEach(workoutSession.exercises) { exercise in
+                        Section(exercise.name) {
+                            let exerciseSets = workoutSession.sets
+                                .filter { $0.exercise?.id == exercise.id && !$0.isDeleted }
+                                .sorted { $0.timestamp < $1.timestamp }
+                            
+                            ForEach(Array(exerciseSets.enumerated()), id: \.element.id) { index, set in
+                                HStack {
+                                    Text("Set \(index + 1)")
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text(set.displayString)
+                                        .fontWeight(.medium)
+                                    if set.isPersonalRecord {
+                                        Text("🏆")
+                                    }
                                 }
                             }
+                            .onDelete { indexSet in
+                                deleteSet(at: indexSet, from: exerciseSets)
+                            }
+                            
+                            Button {
+                                selectedExerciseForSet = exercise
+                            } label: {
+                                Label("Add Set", systemImage: "plus")
+                            }
+                            .id("add-set-\(exercise.id)")
                         }
-                        .onDelete { indexSet in
-                            deleteSet(at: indexSet, from: exerciseSets)
-                        }
-                        
-                        Button {
-                            selectedExerciseForSet = exercise
-                        } label: {
-                            Label("Add Set", systemImage: "plus")
+                    }
+                }
+            }
+            .onChange(of: selectedExerciseForSet) { oldValue, newValue in
+                if newValue == nil, let exercise = oldValue {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 100_000_000)
+                        withAnimation {
+                            proxy.scrollTo("add-set-\(exercise.id)", anchor: .bottom)
                         }
                     }
                 }
@@ -114,6 +127,7 @@ struct ActiveWorkoutView: View {
         for index in offsets {
             modelContext.delete(sets[index])
         }
+        try? modelContext.save()
     }
     
     private func finishWorkout() {

@@ -59,6 +59,7 @@ struct ExerciseSearchView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .accessibilityIdentifier(exercise.name) // Helps with UI tests too
                     }
                 }
             }

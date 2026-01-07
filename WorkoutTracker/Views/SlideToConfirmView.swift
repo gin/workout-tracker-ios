@@ -67,6 +67,7 @@ struct SlideToConfirmView: View {
                             }
                     )
             }
+            .accessibilityIdentifier("SlideHandle")
         }
         .frame(height: handleSize)
     }

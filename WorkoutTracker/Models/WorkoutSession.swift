@@ -21,7 +21,8 @@ final class WorkoutSession {
     
     /// Unique exercises in this workout session, ordered by first set time
     var exercises: [Exercise] {
-        let grouped = Dictionary(grouping: sets) { $0.exercise! }
+        let activeSets = sets.filter { !$0.isDeleted }
+        let grouped = Dictionary(grouping: activeSets) { $0.exercise! }
         return grouped.keys.sorted { exercise1, exercise2 in
             let firstSet1 = grouped[exercise1]?.min(by: { $0.timestamp < $1.timestamp })
             let firstSet2 = grouped[exercise2]?.min(by: { $0.timestamp < $1.timestamp })

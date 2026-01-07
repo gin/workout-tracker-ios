@@ -158,6 +158,7 @@ struct ContentView: View {
             for index in offsets {
                 modelContext.delete(pastWorkouts[index])
             }
+            try? modelContext.save()
         }
     }
 }
