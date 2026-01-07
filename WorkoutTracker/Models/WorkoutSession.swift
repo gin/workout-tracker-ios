@@ -29,4 +29,25 @@ final class WorkoutSession {
             return (firstSet1?.timestamp ?? Date.distantPast) < (firstSet2?.timestamp ?? Date.distantPast)
         }
     }
+    
+    /// Determine smart defaults for a new set of the given exercise
+    /// 1. Last set from THIS workout session (for consecutive sets)
+    /// 2. Personal Record (for the first set of the session)
+    func smartDefaults(for exercise: Exercise) -> (weight: Double, reps: Int)? {
+        // Check current session history first
+        let sessionSets = sets
+            .filter { $0.exercise?.id == exercise.id && !$0.isDeleted }
+            .sorted { $0.timestamp > $1.timestamp }
+            
+        if let lastSessionSet = sessionSets.first {
+            return (lastSessionSet.weight, lastSessionSet.reps)
+        }
+        
+        // Fallback to PR
+        if let pr = exercise.personalRecord {
+            return (pr.weight, pr.reps)
+        }
+        
+        return nil
+    }
 }

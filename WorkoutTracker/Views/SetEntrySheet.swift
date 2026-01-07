@@ -22,11 +22,9 @@ struct SetEntrySheet: View {
         sliderBase...(sliderBase + 20)
     }
     
-    // Get the last set for this exercise to use as default values
-    private var lastSet: ExerciseSet? {
-        exercise.sets
-            .sorted { $0.timestamp > $1.timestamp }
-            .first
+    // Determine smart defaults:
+    private var smartDefaults: (weight: Double, reps: Int)? {
+        workoutSession.smartDefaults(for: exercise)
     }
     
     var body: some View {
@@ -160,10 +158,10 @@ struct SetEntrySheet: View {
                 }
             }
             .onAppear {
-                // Pre-fill with last set values if available
-                if let last = lastSet {
-                    weight = last.weight
-                    reps = last.reps
+                // Pre-fill with smart defaults (session history or PR)
+                if let defaults = smartDefaults {
+                    weight = defaults.weight
+                    reps = defaults.reps
                     sliderBase = floor(weight / 10) * 10
                     isDecimalMode = weight.truncatingRemainder(dividingBy: 1.0) != 0
                 }
