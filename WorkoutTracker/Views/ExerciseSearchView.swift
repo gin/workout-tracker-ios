@@ -20,7 +20,8 @@ struct ExerciseSearchView: View {
     }
     
     var showCreateOption: Bool {
-        !searchText.isEmpty && !exercises.contains { $0.name.localizedCaseInsensitiveCompare(searchText) == .orderedSame }
+        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedSearch.isEmpty && !exercises.contains { $0.name.localizedCaseInsensitiveCompare(trimmedSearch) == .orderedSame }
     }
     
     var body: some View {

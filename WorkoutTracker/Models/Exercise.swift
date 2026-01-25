@@ -11,7 +11,7 @@ final class Exercise {
     
     init(name: String) {
         self.id = UUID()
-        self.name = name
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         self.sets = []
     }
     

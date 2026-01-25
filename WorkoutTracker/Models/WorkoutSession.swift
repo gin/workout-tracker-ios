@@ -10,23 +10,40 @@ final class WorkoutSession {
     @Relationship(deleteRule: .cascade, inverse: \ExerciseSet.workoutSession)
     var sets: [ExerciseSet]
     
+    /// Exercises added as templates from a previous workout (before any sets are logged)
+    var templateExercises: [Exercise]
+    
     init(date: Date = Date(), isActive: Bool = true) {
         self.id = UUID()
         self.date = date
         self.isActive = isActive
         self.sets = []
+        self.templateExercises = []
     }
     
-
-    
     /// Unique exercises in this workout session, ordered by first set time
+    /// Includes both exercises with logged sets and template exercises
     var exercises: [Exercise] {
         let activeSets = sets.filter { !$0.isDeleted }
         let grouped = Dictionary(grouping: activeSets) { $0.exercise! }
-        return grouped.keys.sorted { exercise1, exercise2 in
-            let firstSet1 = grouped[exercise1]?.min(by: { $0.timestamp < $1.timestamp })
-            let firstSet2 = grouped[exercise2]?.min(by: { $0.timestamp < $1.timestamp })
-            return (firstSet1?.timestamp ?? Date.distantPast) < (firstSet2?.timestamp ?? Date.distantPast)
+        
+        // Get exercises from sets with their first set timestamp
+        var exerciseTimestamps: [Exercise: Date] = [:]
+        for (exercise, exerciseSets) in grouped {
+            exerciseTimestamps[exercise] = exerciseSets.min(by: { $0.timestamp < $1.timestamp })?.timestamp ?? Date.distantPast
+        }
+        
+        // Add template exercises that don't have any sets yet
+        // Use staggered timestamps based on array index to preserve their original order
+        for (index, templateExercise) in templateExercises.enumerated() {
+            if exerciseTimestamps[templateExercise] == nil {
+                // Use distantFuture + index to maintain stable relative ordering
+                exerciseTimestamps[templateExercise] = Date.distantFuture.addingTimeInterval(Double(index))
+            }
+        }
+        
+        return exerciseTimestamps.keys.sorted { exercise1, exercise2 in
+            (exerciseTimestamps[exercise1] ?? Date.distantPast) < (exerciseTimestamps[exercise2] ?? Date.distantPast)
         }
     }
     

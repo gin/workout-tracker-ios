@@ -39,7 +39,8 @@ struct ContentView: View {
         }
         .onChange(of: activeWorkout) { oldValue, newValue in
             // When a new workout starts (newValue is not nil, oldValue was nil)
-            if let newValue, oldValue == nil {
+            // Skip if showSummary is open - user is creating workout from template and will navigate within that sheet
+            if let newValue, oldValue == nil, showSummary == nil {
                 editingWorkout = newValue
             }
             

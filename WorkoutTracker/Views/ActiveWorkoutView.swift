@@ -3,8 +3,10 @@ import SwiftData
 
 struct ActiveWorkoutView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     
     @Bindable var workoutSession: WorkoutSession
+    var onFinish: (() -> Void)?
     
     @State private var showExerciseSearch = false
     @State private var selectedExerciseForSet: Exercise?
@@ -131,11 +133,21 @@ struct ActiveWorkoutView: View {
     }
     
     private func finishWorkout() {
-        if workoutSession.sets.isEmpty {
+        let wasCancelled = workoutSession.sets.isEmpty
+        
+        if wasCancelled {
             modelContext.delete(workoutSession)
         } else {
+            // Remove template exercises that have no sets logged
+            let exercisesWithSets = Set(workoutSession.sets.filter { !$0.isDeleted }.compactMap { $0.exercise })
+            workoutSession.templateExercises = workoutSession.templateExercises.filter { exercisesWithSets.contains($0) }
+            
             workoutSession.isActive = false
         }
+        
+        // Dismiss the view and notify parent
+        dismiss()
+        onFinish?()
     }
 }
 

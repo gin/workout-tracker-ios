@@ -3,8 +3,40 @@ import SwiftData
 
 struct WorkoutSummaryView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Query(filter: #Predicate<WorkoutSession> { $0.isActive == true })
+    private var activeWorkouts: [WorkoutSession]
+    @State private var navigateToSession: WorkoutSession?
     
     let workoutSession: WorkoutSession
+    
+    private var hasActiveWorkout: Bool {
+        !activeWorkouts.isEmpty
+    }
+    
+    private var setsByExerciseID: [PersistentIdentifier: [ExerciseSet]] {
+        // Break up complex generic chain to help the type-checker
+        let nonDeleted: [ExerciseSet] = workoutSession.sets.filter { !$0.isDeleted }
+
+        // Build pairs of (key, set) where key is the exercise id if present, otherwise the set's own persistent id
+        let keyed: [(PersistentIdentifier, ExerciseSet)] = nonDeleted.map { set in
+            let key: PersistentIdentifier = set.exercise?.id ?? set.persistentModelID
+            return (key, set)
+        }
+
+        // Group sets by key
+        var grouped: [PersistentIdentifier: [ExerciseSet]] = [:]
+        for (key, set) in keyed {
+            grouped[key, default: []].append(set)
+        }
+
+        // Sort each group's sets by timestamp
+        for key in grouped.keys {
+            grouped[key]?.sort { $0.timestamp < $1.timestamp }
+        }
+
+        return grouped
+    }
     
     var body: some View {
         NavigationStack {
@@ -13,7 +45,8 @@ struct WorkoutSummaryView: View {
                     HStack {
                         Text("Date")
                         Spacer()
-                        Text(workoutSession.date, format: .dateTime.weekday().month().day())
+                        let formattedDate: String = workoutSession.date.formatted(.dateTime.weekday().month().day())
+                        Text(formattedDate)
                             .foregroundStyle(.secondary)
                     }
                     
@@ -33,11 +66,9 @@ struct WorkoutSummaryView: View {
                 }
                 
                 ForEach(workoutSession.exercises) { exercise in
-                    Section(exercise.name) {
-                        let exerciseSets = workoutSession.sets
-                            .filter { $0.exercise?.id == exercise.id && !$0.isDeleted }
-                            .sorted { $0.timestamp < $1.timestamp }
-                        
+                    let exerciseName: String = exercise.name
+                    let exerciseSets = setsByExerciseID[exercise.id] ?? []
+                    Section(exerciseName) {
                         ForEach(Array(exerciseSets.enumerated()), id: \.element.id) { index, set in
                             HStack {
                                 Text("Set \(index + 1)")
@@ -50,16 +81,16 @@ struct WorkoutSummaryView: View {
                                 }
                             }
                         }
-                        
-                        // Show PR comparison
+
                         if let pr = exercise.personalRecord {
+                            let weightString: String = pr.weight.formatted(.number.precision(.fractionLength(0...1)))
+                            let repsString: String = "\(pr.reps)"
                             HStack {
                                 Label("Personal Best", systemImage: "trophy.fill")
                                     .font(.caption)
                                     .foregroundStyle(.orange)
                                 Spacer()
-                                let weightString = pr.weight.formatted(.number.precision(.fractionLength(0...1)))
-                                Text("\(weightString) lbs × \(pr.reps) reps")
+                                Text("\(weightString) lbs × \(repsString) reps")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -70,13 +101,41 @@ struct WorkoutSummaryView: View {
             .navigationTitle("Workout Summary")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        createNewWorkoutFromSummary()
+                    } label: {
+                        Label("New From Summary", systemImage: "arrow.clockwise.circle")
+                    }
+                    .disabled(hasActiveWorkout)
+                    .accessibilityIdentifier("newFromSummaryButton")
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         dismiss()
                     }
                 }
             }
+            .navigationDestination(item: $navigateToSession) { session in
+                ActiveWorkoutView(workoutSession: session) {
+                    dismiss()
+                }
+            }
         }
+    }
+    
+    private func createNewWorkoutFromSummary() {
+        let newSession = WorkoutSession(isActive: true)
+        modelContext.insert(newSession)
+        
+        // Get all exercises from the source session in their original order
+        let sourceExercises: [Exercise] = workoutSession.exercises
+        
+        // Add exercises as templates (no sets duplicated - user starts fresh)
+        newSession.templateExercises = sourceExercises
+        
+        // Navigate to the new session
+        navigateToSession = newSession
     }
 }
 
@@ -91,10 +150,11 @@ struct WorkoutSummaryView: View {
     container.mainContext.insert(exercise)
     
     let set1 = ExerciseSet(weight: 135, reps: 10, exercise: exercise, workoutSession: session)
-    let set2 = ExerciseSet(weight: 155, reps: 8, exercise: exercise, workoutSession: session)
     container.mainContext.insert(set1)
+    let set2 = ExerciseSet(weight: 155, reps: 8, exercise: exercise, workoutSession: session)
     container.mainContext.insert(set2)
     
     return WorkoutSummaryView(workoutSession: session)
         .modelContainer(container)
 }
+
