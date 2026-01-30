@@ -4,6 +4,7 @@ import SwiftData
 @Model
 final class WorkoutSession {
     var id: UUID
+    var name: String = ""
     var date: Date
     var isActive: Bool
     
@@ -13,8 +14,9 @@ final class WorkoutSession {
     /// Exercises added as templates from a previous workout (before any sets are logged)
     var templateExercises: [Exercise]
     
-    init(date: Date = Date(), isActive: Bool = true) {
+    init(name: String = "", date: Date = Date(), isActive: Bool = true) {
         self.id = UUID()
+        self.name = name
         self.date = date
         self.isActive = isActive
         self.sets = []

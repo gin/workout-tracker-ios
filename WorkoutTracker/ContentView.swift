@@ -118,6 +118,11 @@ struct ContentView: View {
                                     Text("\(workout.exercises.count) exercises • \(workout.sets.count) sets")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
+                                    if !workout.name.isEmpty {
+                                        Text(workout.name)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")

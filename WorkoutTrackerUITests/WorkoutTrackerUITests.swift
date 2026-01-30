@@ -30,7 +30,18 @@ final class WorkoutTrackerUITests: XCTestCase {
         
         // Search sheet should appear.
         // TODO: if does not exist, create it.
-        let firstExercise = app.buttons.matching(identifier: "Bicep curl").firstMatch
+        let firstExercise: XCUIElement = {
+            let buttons = app.buttons.allElementsBoundByIndex
+            if let match = buttons.first(where: { element in
+                let label = element.label
+                let identifier = element.identifier
+                return label.lowercased().hasPrefix("bicep curl") || identifier.lowercased().hasPrefix("bicep curl")
+            }) {
+                return match
+            } else {
+                return app.buttons["Bicep curl"]
+            }
+        }()
         
         if firstExercise.waitForExistence(timeout: 20) {
             firstExercise.tap()
@@ -101,6 +112,7 @@ final class WorkoutTrackerUITests: XCTestCase {
         let keepScreenOnButton = app.buttons["keepScreenOnButton"]
         XCTAssertTrue(keepScreenOnButton.waitForExistence(timeout: 2), "Keep Screen On button should exist")
         
+        // TODO: Add a step to ensure which state the button is. Reset to Off before continuing.
         // Verify initial state - screen can turn off
         XCTAssertEqual(keepScreenOnButton.label, "Screen can turn off", "Initial state should be 'Screen can turn off'")
         
@@ -115,6 +127,146 @@ final class WorkoutTrackerUITests: XCTestCase {
         
         // Verify state reverted - screen can turn off
         XCTAssertEqual(keepScreenOnButton.label, "Screen can turn off", "After second tap, state should revert to 'Screen can turn off'")
+    }
+    
+    @MainActor
+    func testReuseWorkoutCancelThenNewWorkout_NameIsEmpty() throws {
+        let app = XCUIApplication()
+        app.launch()
+        
+        // First, we need a past workout to exist
+        // Complete a workout first if there's no history
+        let historyHeader = app.staticTexts["History"]
+        if !historyHeader.waitForExistence(timeout: 2) {
+            // Create a workout first
+            try createAndFinishWorkout(app: app)
+        }
+        
+        // 1. Tap on a past workout to open summary
+        let historyCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'exercises'")).firstMatch
+        XCTAssertTrue(historyCell.waitForExistence(timeout: 2), "Should have a past workout")
+        historyCell.tap()
+        
+        // 2. Tap "Reuse Workout"
+        let reuseButton = app.buttons["Reuse Workout"]
+        XCTAssertTrue(reuseButton.waitForExistence(timeout: 2), "Reuse Workout button should exist")
+        reuseButton.tap()
+        
+        // 3. Cancel the workout
+        let cancelButton = app.buttons["Cancel Workout"]
+        XCTAssertTrue(cancelButton.waitForExistence(timeout: 2), "Cancel Workout button should exist")
+        cancelButton.tap()
+        
+        // 4. Start new workout
+        let startButton = app.buttons["Start New Workout"]
+        XCTAssertTrue(startButton.waitForExistence(timeout: 2), "Start New Workout button should exist")
+        startButton.tap()
+        
+        // 5. Add an exercise
+        let plusButton = app.buttons["plus"]
+        XCTAssertTrue(plusButton.waitForExistence(timeout: 2), "Plus button should exist")
+        plusButton.tap()
+        
+        let firstExercise: XCUIElement = {
+            let buttons = app.buttons.allElementsBoundByIndex
+            if let match = buttons.first(where: { element in
+                let label = element.label
+                let identifier = element.identifier
+                return label.lowercased().hasPrefix("bicep curl") || identifier.lowercased().hasPrefix("bicep curl")
+            }) {
+                return match
+            } else {
+                return app.buttons["Bicep curl"]
+            }
+        }()
+        
+        if firstExercise.waitForExistence(timeout: 5) {
+            firstExercise.tap()
+        } else {
+            app.buttons["Cancel"].tap()
+            return // Skip if no exercises exist
+        }
+        
+        // 6. Log a set
+        let logSetButton = app.buttons["Log Set"]
+        if logSetButton.waitForExistence(timeout: 2) {
+            logSetButton.tap()
+        }
+        
+        // 7. Finish the workout
+        let finishButton = app.buttons["Finish Workout"]
+        XCTAssertTrue(finishButton.waitForExistence(timeout: 2))
+        finishButton.tap()
+        
+        // Slide to finish
+        let sliderHandle = app.otherElements["SlideHandle"]
+        XCTAssertTrue(sliderHandle.waitForExistence(timeout: 2))
+        sliderHandle.longSwipe(.right)
+        
+        // 8. Verify workout summary shows - name field should be empty
+        let summaryTitle = app.staticTexts["Workout Summary"]
+        XCTAssertTrue(summaryTitle.waitForExistence(timeout: 2))
+        
+        // Check that the Name text field placeholder is "Workout Name" (meaning it's empty)
+        let nameField = app.textFields["Workout Name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 2), "Name field should exist")
+        
+        // The text field should be empty (only placeholder visible)
+        let nameValue = nameField.value as? String ?? ""
+        XCTAssertTrue(nameValue.isEmpty || nameValue == "Workout Name", "Name should be empty for a fresh workout, got: \(nameValue)")
+    }
+    
+    private func createAndFinishWorkout(app: XCUIApplication) throws {
+        let startButton = app.buttons["Start New Workout"]
+        if startButton.waitForExistence(timeout: 2) {
+            startButton.tap()
+        }
+        
+        let plusButton = app.buttons["plus"]
+        if plusButton.waitForExistence(timeout: 2) {
+            plusButton.tap()
+        }
+        
+        let firstExercise: XCUIElement = {
+            let buttons = app.buttons.allElementsBoundByIndex
+            if let match = buttons.first(where: { element in
+                let label = element.label
+                let identifier = element.identifier
+                return label.lowercased().hasPrefix("bicep curl") || identifier.lowercased().hasPrefix("bicep curl")
+            }) {
+                return match
+            } else {
+                return app.buttons["Bicep curl"]
+            }
+        }()
+        
+        if firstExercise.waitForExistence(timeout: 5) {
+            firstExercise.tap()
+        } else {
+            app.buttons["Cancel"].tap()
+            return
+        }
+        
+        let logSetButton = app.buttons["Log Set"]
+        if logSetButton.waitForExistence(timeout: 2) {
+            logSetButton.tap()
+        }
+        
+        let finishButton = app.buttons["Finish Workout"]
+        if finishButton.waitForExistence(timeout: 2) {
+            finishButton.tap()
+        }
+        
+        let sliderHandle = app.otherElements["SlideHandle"]
+        if sliderHandle.waitForExistence(timeout: 2) {
+            sliderHandle.longSwipe(.right)
+        }
+        
+        // Dismiss summary
+        let doneButton = app.buttons["Done"]
+        if doneButton.waitForExistence(timeout: 2) {
+            doneButton.tap()
+        }
     }
 }
 
@@ -142,3 +294,4 @@ extension XCUIElement
         startPoint.press(forDuration: 0.1, thenDragTo: endPoint)
     }
 }
+

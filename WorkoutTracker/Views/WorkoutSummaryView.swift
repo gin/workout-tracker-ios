@@ -43,6 +43,17 @@ struct WorkoutSummaryView: View {
             List {
                 Section {
                     HStack {
+                        Text("Name")
+                        Spacer()
+                        TextField("Workout Name", text: Binding(
+                            get: { workoutSession.name },
+                            set: { workoutSession.name = $0 }
+                        ))
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.primary)
+                    }
+                    
+                    HStack {
                         Text("Date")
                         Spacer()
                         let formattedDate: String = workoutSession.date.formatted(.dateTime.weekday().month().day())
@@ -138,7 +149,7 @@ struct WorkoutSummaryView: View {
     }
     
     private func createNewWorkoutFromSummary() {
-        let newSession = WorkoutSession(isActive: true)
+        let newSession = WorkoutSession(name: workoutSession.name, isActive: true)
         modelContext.insert(newSession)
         
         // Get all exercises from the source session in their original order

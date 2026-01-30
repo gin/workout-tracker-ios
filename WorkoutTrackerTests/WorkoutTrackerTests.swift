@@ -351,6 +351,112 @@ struct WorkoutTrackerTests {
         #expect(exercise.personalRecordDisplay == "315 × 5")
     }
     
+    // MARK: - Workout Session Name Tests
+    
+    @Test
+    func testWorkoutSession_DefaultNameIsEmpty() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        container.mainContext.insert(session)
+        
+        #expect(session.name == "")
+    }
+    
+    @Test
+    func testWorkoutSession_CustomName() throws {
+        let container = try createContainer()
+        let session = WorkoutSession(name: "Leg Day")
+        container.mainContext.insert(session)
+        
+        #expect(session.name == "Leg Day")
+    }
+    
+    @Test
+    func testWorkoutSession_RenameWorkout() throws {
+        let container = try createContainer()
+        let session = WorkoutSession(name: "Morning Workout")
+        container.mainContext.insert(session)
+        
+        // Rename
+        session.name = "Push Day"
+        
+        #expect(session.name == "Push Day")
+    }
+    
+    @Test
+    func testWorkoutSession_NameDoesNotAffectOtherWorkouts() throws {
+        let container = try createContainer()
+        let session1 = WorkoutSession(name: "Workout A")
+        let session2 = WorkoutSession(name: "Workout B")
+        container.mainContext.insert(session1)
+        container.mainContext.insert(session2)
+        
+        // Rename session1
+        session1.name = "Updated Workout A"
+        
+        // session2 should remain unchanged
+        #expect(session1.name == "Updated Workout A")
+        #expect(session2.name == "Workout B")
+    }
+    
+    @Test
+    func testReuseWorkout_CopiesName() throws {
+        let container = try createContainer()
+        
+        // Original workout with a name
+        let originalSession = WorkoutSession(name: "Leg Day", isActive: false)
+        container.mainContext.insert(originalSession)
+        
+        // Simulate "Reuse Workout" - creates new session with same name
+        let reusedSession = WorkoutSession(name: originalSession.name, isActive: true)
+        container.mainContext.insert(reusedSession)
+        
+        #expect(reusedSession.name == "Leg Day")
+        #expect(originalSession.name == "Leg Day")
+        
+        // Changing reused session name doesn't affect original
+        reusedSession.name = "Updated Leg Day"
+        #expect(reusedSession.name == "Updated Leg Day")
+        #expect(originalSession.name == "Leg Day")
+    }
+    
+    @Test
+    func testReuseWorkout_EmptyNameStaysEmpty() throws {
+        let container = try createContainer()
+        
+        // Original workout with no name
+        let originalSession = WorkoutSession(name: "", isActive: false)
+        container.mainContext.insert(originalSession)
+        
+        // Reuse copies the empty name
+        let reusedSession = WorkoutSession(name: originalSession.name, isActive: true)
+        container.mainContext.insert(reusedSession)
+        
+        #expect(reusedSession.name == "")
+    }
+    
+    @Test
+    func testNewWorkout_HasEmptyName() throws {
+        let container = try createContainer()
+        let exercise = Exercise(name: "Bench Press")
+        container.mainContext.insert(exercise)
+        
+        // Start a fresh new workout (not from reuse)
+        let newSession = WorkoutSession()
+        container.mainContext.insert(newSession)
+        
+        // Add a set
+        let set1 = ExerciseSet(weight: 135, reps: 10, exercise: exercise, workoutSession: newSession)
+        container.mainContext.insert(set1)
+        
+        // Finish workout
+        newSession.isActive = false
+        
+        // Name should still be empty
+        #expect(newSession.name == "")
+        #expect(newSession.sets.count == 1)
+    }
+    
     // Helper to get context easily
     private func modelContext(from container: ModelContainer) -> ModelContext {
         container.mainContext
