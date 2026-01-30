@@ -32,6 +32,9 @@ struct ContentView: View {
             .interactiveDismissDisabled(false)
         }
         .onAppear {
+            // Ensure idle timer state matches our button state on appear
+            UIApplication.shared.isIdleTimerDisabled = keepScreenOn
+            
             // Auto-open if there's an active workout
             if let workout = activeWorkout {
                 editingWorkout = workout
@@ -127,7 +130,17 @@ struct ContentView: View {
             }
         }
         .navigationTitle("Workout Tracker")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
+
+            // Workaround for large title not to collapse on scroll
+            // Better UI experience because the title will be cut off when collapsed due to the "Keep Screen On" button
+            // "Workout Summary" uses a different way (title in content) to display the title, so it doesn't collapse
+            ToolbarItem(placement: .principal) {
+                Text("")
+                    .font(.headline)
+            }
+
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     keepScreenOn.toggle()
@@ -140,6 +153,7 @@ struct ContentView: View {
                     .foregroundStyle(keepScreenOn ? .yellow : .secondary)
                 }
                 .accessibilityLabel(keepScreenOn ? "Screen always on" : "Screen can turn off")
+                .accessibilityIdentifier("keepScreenOnButton")
             }
             
             if !pastWorkouts.isEmpty {

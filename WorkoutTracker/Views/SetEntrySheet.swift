@@ -14,6 +14,9 @@ struct SetEntrySheet: View {
     @State private var isDecimalMode: Bool = false
     @FocusState private var isWeightFocused: Bool
     @FocusState private var isRepsFocused: Bool
+    @FocusState private var isNameFocused: Bool
+    
+    @State private var editedName: String = ""
     
     private var weightStep: Double {
         isDecimalMode ? 0.5 : 1.0
@@ -35,8 +38,13 @@ struct SetEntrySheet: View {
                     HStack {
                         Text("Exercise")
                         Spacer()
-                        Text(exercise.name)
-                            .foregroundStyle(.secondary)
+                        TextField("Exercise Name", text: $editedName)
+                            .focused($isNameFocused)
+                            .multilineTextAlignment(.trailing)
+                            .foregroundStyle(.primary)
+                            .onSubmit {
+                                saveExerciseName()
+                            }
                     }
                 }
                 
@@ -173,6 +181,9 @@ struct SetEntrySheet: View {
                 }
             }
             .onAppear {
+                // Initialize edited name
+                editedName = exercise.name
+                
                 // Pre-fill with smart defaults (session history or PR)
                 if let defaults = smartDefaults {
                     weight = defaults.weight
@@ -180,6 +191,10 @@ struct SetEntrySheet: View {
                     sliderBase = floor(weight / 10) * 10
                     isDecimalMode = weight.truncatingRemainder(dividingBy: 1.0) != 0
                 }
+            }
+            .onDisappear {
+                // Save name changes when sheet closes
+                saveExerciseName()
             }
         }
     }
@@ -193,6 +208,13 @@ struct SetEntrySheet: View {
         )
         modelContext.insert(newSet)
         dismiss()
+    }
+    
+    private func saveExerciseName() {
+        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty && trimmedName != exercise.name {
+            exercise.name = trimmedName
+        }
     }
 }
 

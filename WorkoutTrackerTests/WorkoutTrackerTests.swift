@@ -160,6 +160,197 @@ struct WorkoutTrackerTests {
         #expect(session.exercises.isEmpty)
     }
     
+    // MARK: - Personal Record Date Display Tests
+    
+    @Test
+    func testPersonalRecordDateDisplay_Today() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Bench")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        // Create a set with today's timestamp
+        let set1 = ExerciseSet(weight: 100, reps: 10, exercise: exercise, workoutSession: session)
+        container.mainContext.insert(set1)
+        
+        #expect(exercise.personalRecordDateDisplay == "Today")
+    }
+    
+    @Test
+    func testPersonalRecordDateDisplay_OneDayAgo() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Squat")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        let set1 = ExerciseSet(weight: 200, reps: 5, exercise: exercise, workoutSession: session)
+        // Set timestamp to yesterday
+        set1.timestamp = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        container.mainContext.insert(set1)
+        
+        #expect(exercise.personalRecordDateDisplay == "1 day ago")
+    }
+    
+    @Test
+    func testPersonalRecordDateDisplay_MultipleDaysAgo() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Deadlift")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        let set1 = ExerciseSet(weight: 300, reps: 3, exercise: exercise, workoutSession: session)
+        // Set timestamp to 15 days ago
+        set1.timestamp = Calendar.current.date(byAdding: .day, value: -15, to: Date())!
+        container.mainContext.insert(set1)
+        
+        #expect(exercise.personalRecordDateDisplay == "15 days ago")
+    }
+    
+    @Test
+    func testPersonalRecordDateDisplay_OldDate() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Press")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        let set1 = ExerciseSet(weight: 150, reps: 8, exercise: exercise, workoutSession: session)
+        // Set timestamp to 60 days ago (>31 days)
+        let oldDate = Calendar.current.date(byAdding: .day, value: -60, to: Date())!
+        set1.timestamp = oldDate
+        container.mainContext.insert(set1)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let expectedDate = formatter.string(from: oldDate)
+        
+        #expect(exercise.personalRecordDateDisplay == expectedDate)
+    }
+    
+    @Test
+    func testPersonalRecordDateDisplay_NoSets() throws {
+        let container = try createContainer()
+        let exercise = Exercise(name: "New Exercise")
+        container.mainContext.insert(exercise)
+        
+        #expect(exercise.personalRecordDateDisplay == "")
+    }
+    
+    // MARK: - Personal Record Display Tests
+    
+    @Test
+    func testPersonalRecordDisplay_FormatsCorrectly() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Curl")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        let set1 = ExerciseSet(weight: 45.5, reps: 12, exercise: exercise, workoutSession: session)
+        container.mainContext.insert(set1)
+        
+        #expect(exercise.personalRecordDisplay == "45.5 × 12")
+    }
+    
+    @Test
+    func testPersonalRecordDisplay_NoHistory() throws {
+        let container = try createContainer()
+        let exercise = Exercise(name: "Brand New Exercise")
+        container.mainContext.insert(exercise)
+        
+        #expect(exercise.personalRecordDisplay == "No history")
+    }
+    
+    // MARK: - Template Exercises Tests
+    
+    @Test
+    func testTemplateExercisesOrdering() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        container.mainContext.insert(session)
+        
+        // Create exercises
+        let benchPress = Exercise(name: "Bench Press")
+        let squat = Exercise(name: "Squat")
+        let deadlift = Exercise(name: "Deadlift")
+        container.mainContext.insert(benchPress)
+        container.mainContext.insert(squat)
+        container.mainContext.insert(deadlift)
+        
+        // Add squat as template
+        session.templateExercises = [squat, deadlift]
+        
+        // Log a set for bench press
+        let set1 = ExerciseSet(weight: 135, reps: 10, exercise: benchPress, workoutSession: session)
+        container.mainContext.insert(set1)
+        
+        // Exercises should be: bench (has set), then squat, deadlift (templates in order)
+        let exercises = session.exercises
+        #expect(exercises.count == 3)
+        #expect(exercises[0].name == "Bench Press")
+        #expect(exercises[1].name == "Squat")
+        #expect(exercises[2].name == "Deadlift")
+    }
+    
+    // MARK: - Exercise Name Editing Tests
+    
+    @Test
+    func testExerciseRename_UpdatesAllReferences() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Bench Press")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        // Create multiple sets for the exercise
+        let set1 = ExerciseSet(weight: 135, reps: 10, exercise: exercise, workoutSession: session)
+        let set2 = ExerciseSet(weight: 185, reps: 5, exercise: exercise, workoutSession: session)
+        container.mainContext.insert(set1)
+        container.mainContext.insert(set2)
+        
+        // Verify initial state
+        #expect(exercise.name == "Bench Press")
+        #expect(set1.exercise?.name == "Bench Press")
+        #expect(set2.exercise?.name == "Bench Press")
+        
+        // Rename exercise
+        exercise.name = "Incline Bench Press"
+        
+        // All references should see the new name
+        #expect(exercise.name == "Incline Bench Press")
+        #expect(set1.exercise?.name == "Incline Bench Press")
+        #expect(set2.exercise?.name == "Incline Bench Press")
+    }
+    
+    @Test
+    func testExerciseRename_PreservesPersonalRecord() throws {
+        let container = try createContainer()
+        let session = WorkoutSession()
+        let exercise = Exercise(name: "Squat")
+        container.mainContext.insert(session)
+        container.mainContext.insert(exercise)
+        
+        let prSet = ExerciseSet(weight: 315, reps: 5, exercise: exercise, workoutSession: session)
+        container.mainContext.insert(prSet)
+        
+        // Verify PR before rename
+        let prBefore = try #require(exercise.personalRecord)
+        #expect(prBefore.weight == 315)
+        #expect(prBefore.reps == 5)
+        
+        // Rename exercise
+        exercise.name = "Back Squat"
+        
+        // PR should still be intact
+        let prAfter = try #require(exercise.personalRecord)
+        #expect(prAfter.weight == 315)
+        #expect(prAfter.reps == 5)
+        #expect(exercise.personalRecordDisplay == "315 × 5")
+    }
+    
     // Helper to get context easily
     private func modelContext(from container: ModelContainer) -> ModelContext {
         container.mainContext

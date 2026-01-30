@@ -22,7 +22,7 @@ struct WorkoutTrackerApp: App {
         WindowGroup {
             ContentView()
                 .onAppear {
-                    DataCleanup.cleanDuplicates(context: sharedModelContainer.mainContext)
+                    DataCleanup.cleanDuplicatesAsync(context: sharedModelContainer.mainContext)
                 }
         }
         .modelContainer(sharedModelContainer)

@@ -91,6 +91,31 @@ final class WorkoutTrackerUITests: XCTestCase {
         // Verify we are back to the start screen
         XCTAssertTrue(startButton.waitForExistence(timeout: 2))
     }
+    
+    @MainActor
+    func testKeepScreenOnButton() throws {
+        let app = XCUIApplication()
+        app.launch()
+        
+        // Find the Keep Screen On button
+        let keepScreenOnButton = app.buttons["keepScreenOnButton"]
+        XCTAssertTrue(keepScreenOnButton.waitForExistence(timeout: 2), "Keep Screen On button should exist")
+        
+        // Verify initial state - screen can turn off
+        XCTAssertEqual(keepScreenOnButton.label, "Screen can turn off", "Initial state should be 'Screen can turn off'")
+        
+        // Tap to turn on
+        keepScreenOnButton.tap()
+        
+        // Verify state changed - screen always on
+        XCTAssertEqual(keepScreenOnButton.label, "Screen always on", "After tap, state should be 'Screen always on'")
+        
+        // Tap again to turn off
+        keepScreenOnButton.tap()
+        
+        // Verify state reverted - screen can turn off
+        XCTAssertEqual(keepScreenOnButton.label, "Screen can turn off", "After second tap, state should revert to 'Screen can turn off'")
+    }
 }
 
 extension XCUIElement
