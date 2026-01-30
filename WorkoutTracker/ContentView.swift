@@ -133,8 +133,11 @@ struct ContentView: View {
                     keepScreenOn.toggle()
                     UIApplication.shared.isIdleTimerDisabled = keepScreenOn
                 } label: {
-                    Image(systemName: keepScreenOn ? "sun.max.fill" : "sun.max")
-                        .foregroundStyle(keepScreenOn ? .yellow : .secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: keepScreenOn ? "sun.max.fill" : "sun.max")
+                        Text("Keep Screen On")
+                    }
+                    .foregroundStyle(keepScreenOn ? .yellow : .secondary)
                 }
                 .accessibilityLabel(keepScreenOn ? "Screen always on" : "Screen can turn off")
             }

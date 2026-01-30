@@ -13,6 +13,7 @@ struct SetEntrySheet: View {
     @State private var sliderBase: Double = 0
     @State private var isDecimalMode: Bool = false
     @FocusState private var isWeightFocused: Bool
+    @FocusState private var isRepsFocused: Bool
     
     private var weightStep: Double {
         isDecimalMode ? 0.5 : 1.0
@@ -98,10 +99,19 @@ struct SetEntrySheet: View {
                             HStack {
                                 Text("Reps")
                                 Spacer()
-                                Text("\(reps)")
+                                TextField("1", value: $reps, format: .number)
+                                    .focused($isRepsFocused)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
                                     .font(.title2)
                                     .fontWeight(.semibold)
                                     .monospacedDigit()
+                                    .frame(width: 60)
+                                    .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { obj in
+                                        if let textField = obj.object as? UITextField {
+                                            textField.selectAll(nil)
+                                        }
+                                    }
                             }
                         }
                         
@@ -125,7 +135,12 @@ struct SetEntrySheet: View {
                 if let pr = exercise.personalRecord {
                     Section("Personal Record") {
                         HStack {
-                            Text("Best")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Best")
+                                Text(exercise.personalRecordDateDisplay)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                             Spacer()
                             let weightString = pr.weight.formatted(.number.precision(.fractionLength(0...1)))
                             Text("\(weightString) lbs × \(pr.reps) reps")

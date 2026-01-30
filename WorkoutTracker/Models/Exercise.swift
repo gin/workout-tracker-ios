@@ -15,8 +15,8 @@ final class Exercise {
         self.sets = []
     }
     
-    /// Returns the personal record as (weight, reps) tuple, or nil if no sets exist
-    var personalRecord: (weight: Double, reps: Int)? {
+    /// Returns the personal record as (weight, reps, date) tuple, or nil if no sets exist
+    var personalRecord: (weight: Double, reps: Int, date: Date)? {
         guard !sets.isEmpty else { return nil }
         
         // Find the set with the highest weight × reps (estimated 1RM proxy)
@@ -32,7 +32,28 @@ final class Exercise {
         }
         
         guard let best = bestSet else { return nil }
-        return (weight: best.weight, reps: best.reps)
+        return (weight: best.weight, reps: best.reps, date: best.timestamp)
+    }
+    
+    /// Formatted date string for personal record: "N days ago" if within 31 days, otherwise "YYYY-MM-DD"
+    var personalRecordDateDisplay: String {
+        guard let pr = personalRecord else { return "" }
+        let now = Date()
+        let daysSince = Calendar.current.dateComponents([.day], from: pr.date, to: now).day ?? 0
+        
+        if daysSince <= 31 {
+            if daysSince == 0 {
+                return "Today"
+            } else if daysSince == 1 {
+                return "1 day ago"
+            } else {
+                return "\(daysSince) days ago"
+            }
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            return formatter.string(from: pr.date)
+        }
     }
     
     /// Formatted personal record string for display

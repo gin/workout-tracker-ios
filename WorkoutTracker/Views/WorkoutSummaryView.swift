@@ -63,6 +63,12 @@ struct WorkoutSummaryView: View {
                         Text("\(workoutSession.exercises.count)")
                             .foregroundStyle(.secondary)
                     }
+                } header: {
+                    Text("Workout Summary")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
+                        .textCase(nil)
                 }
                 
                 ForEach(workoutSession.exercises) { exercise in
@@ -85,27 +91,34 @@ struct WorkoutSummaryView: View {
                         if let pr = exercise.personalRecord {
                             let weightString: String = pr.weight.formatted(.number.precision(.fractionLength(0...1)))
                             let repsString: String = "\(pr.reps)"
-                            HStack {
-                                Label("Personal Best", systemImage: "trophy.fill")
-                                    .font(.caption)
+                            HStack(alignment: .top, spacing: 6) {
+                                Image(systemName: "trophy.fill")
                                     .foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Personal Best")
+                                        .foregroundStyle(.orange)
+                                    Text(exercise.personalRecordDateDisplay)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                                 Spacer()
                                 Text("\(weightString) lbs × \(repsString) reps")
-                                    .font(.caption)
+                                    .fontWeight(.medium)
                                     .foregroundStyle(.secondary)
                             }
                         }
                     }
                 }
             }
-            .navigationTitle("Workout Summary")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         createNewWorkoutFromSummary()
                     } label: {
-                        Label("New From Summary", systemImage: "arrow.clockwise.circle")
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.clockwise.circle")
+                            Text("Reuse Workout")
+                        }
                     }
                     .disabled(hasActiveWorkout)
                     .accessibilityIdentifier("newFromSummaryButton")

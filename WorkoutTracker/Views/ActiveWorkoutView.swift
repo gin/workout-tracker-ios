@@ -79,7 +79,7 @@ struct ActiveWorkoutView: View {
                     .ignoresSafeArea()
             }
         }
-        .navigationTitle("Workout")
+        .navigationTitle("Current Workout")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
